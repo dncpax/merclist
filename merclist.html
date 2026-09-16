@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+	<meta name="theme-color" content="#111315">
+	<title>MercList | Grocery list</title>
+	<style>
+		:root {
+			color-scheme: dark;
+			--background: #111315;
+			--surface: #1a1d20;
+			--surface-raised: #23272b;
+			--border: #30353a;
+			--text: #f3f5f4;
+			--muted: #9ba3a8;
+			--accent: #b9e86c;
+			--accent-ink: #18200d;
+			--radius: 16px;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			margin: 0;
+			min-width: 320px;
+			min-height: 100vh;
+			background: var(--background);
+			color: var(--text);
+			font-family: ui-rounded, "Avenir Next", "Segoe UI", sans-serif;
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		main {
+			width: min(100% - 32px, 620px);
+			margin: 0 auto;
+			padding: max(28px, env(safe-area-inset-top)) 0 max(32px, env(safe-area-inset-bottom));
+		}
+
+		.eyebrow {
+			margin: 0 0 8px;
+			color: var(--accent);
+			font-size: 0.76rem;
+			font-weight: 700;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+		}
+
+		h1 {
+			margin: 0;
+			font-size: clamp(2rem, 9vw, 3.3rem);
+			letter-spacing: -0.04em;
+			line-height: 1;
+		}
+
+		.subtitle {
+			margin: 12px 0 26px;
+			color: var(--muted);
+			font-size: 0.98rem;
+		}
+
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+
+		.add-form {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 18px;
+		}
+
+		input[type="text"] {
+			width: 100%;
+			min-width: 0;
+			border: 1px solid var(--border);
+			border-radius: 12px;
+			background: var(--surface);
+			color: var(--text);
+			font: inherit;
+			padding: 14px 15px;
+			outline: none;
+		}
+
+		input[type="text"]::placeholder { color: #747c81; }
+		input[type="text"]:focus { border-color: var(--accent); }
+
+		button {
+			border: 0;
+			border-radius: 12px;
+			background: var(--accent);
+			color: var(--accent-ink);
+			cursor: pointer;
+			font: inherit;
+			font-weight: 800;
+			min-width: 50px;
+			padding: 0 17px;
+		}
+
+		button:active { transform: translateY(1px); }
+
+		.list-shell {
+			overflow: hidden;
+			border: 1px solid var(--border);
+			border-radius: var(--radius);
+			background: var(--surface);
+		}
+
+		.list-header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			min-height: 51px;
+			border-bottom: 1px solid var(--border);
+			padding: 0 17px;
+		}
+
+		.list-heading {
+			display: flex;
+			align-items: baseline;
+			gap: 9px;
+			min-width: 0;
+		}
+
+		.list-header strong { font-size: 0.9rem; }
+		.count { color: var(--muted); font-size: 0.83rem; white-space: nowrap; }
+
+		.clear-button {
+			min-width: auto;
+			min-height: 34px;
+			padding: 0 11px;
+			border: 1px solid var(--border);
+			background: transparent;
+			color: var(--muted);
+			font-size: 0.78rem;
+			white-space: nowrap;
+		}
+
+		.clear-button:hover, .clear-button:focus-visible {
+			border-color: var(--accent);
+			color: var(--text);
+		}
+
+		#grocery-list { list-style: none; margin: 0; padding: 0; }
+
+		.grocery-item {
+			display: flex;
+			align-items: center;
+			min-height: 58px;
+			border-bottom: 1px solid var(--border);
+			padding: 7px 17px;
+			transition: background 160ms ease;
+		}
+
+		.grocery-item:last-child { border-bottom: 0; }
+		.grocery-item:has(input:checked) { background: rgba(185, 232, 108, 0.06); }
+		.grocery-item.is-bought { background: rgba(155, 163, 168, 0.05); }
+
+		.grocery-item label {
+			display: flex;
+			align-items: center;
+			flex: 1;
+			gap: 13px;
+			min-height: 44px;
+			cursor: pointer;
+			font-size: 1rem;
+		}
+
+		.grocery-item input {
+			width: 22px;
+			height: 22px;
+			margin: 0;
+			flex: 0 0 auto;
+			accent-color: var(--accent);
+		}
+
+		.grocery-item input:checked + span { color: var(--text); }
+		.grocery-item.is-bought span.item-name {
+			color: var(--muted);
+			text-decoration: line-through;
+			text-decoration-color: var(--accent);
+		}
+
+		.item-status {
+			border-radius: 9px;
+			background: rgba(155, 163, 168, 0.12);
+			color: var(--muted);
+			font-size: 0.72rem;
+			font-weight: 700;
+			padding: 6px 8px;
+			white-space: nowrap;
+		}
+
+		.status-action {
+			min-width: auto;
+			min-height: 36px;
+			border: 1px solid var(--border);
+			background: transparent;
+			color: var(--muted);
+			font-size: 0.76rem;
+			padding: 0 10px;
+			white-space: nowrap;
+		}
+
+		.status-action:hover, .status-action:focus-visible {
+			border-color: var(--accent);
+			color: var(--text);
+		}
+
+		.remove {
+			min-width: 36px;
+			min-height: 36px;
+			padding: 0;
+			background: transparent;
+			color: var(--muted);
+			font-size: 1.25rem;
+			line-height: 1;
+		}
+
+		.remove:hover, .remove:focus-visible { color: var(--text); }
+
+		.empty {
+			color: var(--muted);
+			padding: 28px 17px;
+			text-align: center;
+		}
+
+		@media (max-width: 420px) {
+			main { width: min(100% - 24px, 620px); }
+			.add-form { gap: 7px; }
+			button { padding: 0 14px; }
+		}
+	</style>
+</head>
+<body>
+	<main>
+		<p class="eyebrow">MercList</p>
+		<h1>Grocery list</h1>
+		<p class="subtitle">Tap an item when it finds its way into your basket.</p>
+
+		<form class="add-form" id="add-form">
+			<label class="sr-only" for="new-item">Add a grocery item</label>
+			<input id="new-item" type="text" maxlength="60" placeholder="Add an item..." autocomplete="off">
+			<button type="submit" aria-label="Add grocery item">Add</button>
+		</form>
+
+		<section class="list-shell" aria-labelledby="list-title">
+			<div class="list-header">
+				<div class="list-heading">
+					<strong id="list-title">To buy</strong>
+					<span class="count" id="count">0 items</span>
+				</div>
+				<button class="clear-button" id="clear-bought" type="button">Clear bought</button>
+			</div>
+			<ul id="grocery-list"></ul>
+		</section>
+	</main>
+
+	<script>
+		const storageKey = "merclist-items";
+		const starterItems = [
+			"Apples", "Bananas", "Bread", "Carrots", "Chicken", "Coffee",
+			"Eggs", "Milk", "Onions", "Pasta", "Rice", "Tomatoes"
+		];
+
+		let items = loadItems();
+		const list = document.getElementById("grocery-list");
+		const count = document.getElementById("count");
+		const form = document.getElementById("add-form");
+		const newItem = document.getElementById("new-item");
+		const clearBought = document.getElementById("clear-bought");
+
+		function loadItems() {
+			try {
+				const saved = JSON.parse(localStorage.getItem(storageKey));
+				if (Array.isArray(saved)) {
+					return saved.map(item => ({
+						name: item.name,
+						status: ["idle", "needed", "bought"].includes(item.status)
+							? item.status
+							: item.checked ? "needed" : "idle"
+					}));
+				}
+			} catch (error) {
+			}
+			return starterItems.map(name => ({ name, status: "idle" }));
+		}
+
+		function saveItems() {
+			localStorage.setItem(storageKey, JSON.stringify(items));
+		}
+
+		function render() {
+			const orderedItems = [...items].sort((a, b) => {
+				const aIsActive = a.status !== "idle";
+				const bIsActive = b.status !== "idle";
+				if (aIsActive !== bIsActive) return aIsActive ? -1 : 1;
+				return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+			});
+
+			list.innerHTML = "";
+			const itemsToBuy = items.filter(item => item.status === "needed").length;
+			count.textContent = `${itemsToBuy} to buy`;
+
+			if (!orderedItems.length) {
+				list.innerHTML = '<li class="empty">Your list is empty.</li>';
+				return;
+			}
+
+			orderedItems.forEach(item => {
+				const row = document.createElement("li");
+				row.className = `grocery-item${item.status === "bought" ? " is-bought" : ""}`;
+				const isNeeded = item.status === "needed";
+				const isBought = item.status === "bought";
+				row.innerHTML = `
+					<label>
+						<input type="checkbox" ${item.status !== "idle" ? "checked" : ""} aria-label="${isBought ? "Bought" : isNeeded ? "Needs" : "Add"} ${escapeHtml(item.name)} ${isBought ? "in the basket" : "to the shopping list"}">
+						<span class="item-name">${escapeHtml(item.name)}</span>
+					</label>
+					${isNeeded ? `<button class="status-action" type="button" aria-label="Mark ${escapeHtml(item.name)} as bought">Bought</button>` : ""}
+					${isBought ? `<button class="status-action" type="button" aria-label="Undo bought status for ${escapeHtml(item.name)}">Undo</button>` : ""}
+					<button class="remove" type="button" aria-label="Remove ${escapeHtml(item.name)}">&times;</button>
+				`;
+
+				row.querySelector("input").addEventListener("change", event => {
+					if (!event.target.checked && isBought) item.status = "idle";
+					else item.status = event.target.checked ? "needed" : "idle";
+					saveItems();
+					render();
+				});
+				const statusAction = row.querySelector(".status-action");
+				if (statusAction) {
+					statusAction.addEventListener("click", () => {
+						item.status = isNeeded ? "bought" : "needed";
+						saveItems();
+						render();
+					});
+				}
+				row.querySelector(".remove").addEventListener("click", () => {
+					items = items.filter(candidate => candidate !== item);
+					saveItems();
+					render();
+				});
+				list.appendChild(row);
+			});
+		}
+
+		function escapeHtml(value) {
+			return value.replace(/[&<>'"]/g, character => ({
+				"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;"
+			}[character]));
+		}
+
+		form.addEventListener("submit", event => {
+			event.preventDefault();
+			const name = newItem.value.trim();
+			if (!name) return;
+			items.push({ name, status: "idle" });
+			newItem.value = "";
+			saveItems();
+			render();
+			newItem.focus();
+		});
+
+		clearBought.addEventListener("click", () => {
+			items.forEach(item => {
+				if (item.status === "bought") item.status = "idle";
+			});
+			saveItems();
+			render();
+		});
+
+		render();
+	</script>
+</body>
+</html>
