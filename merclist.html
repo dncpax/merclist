@@ -4,6 +4,9 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 	<meta name="theme-color" content="#111315">
+	<meta name="description" content="A simple offline grocery list.">
+	<link rel="manifest" href="manifest.webmanifest">
+	<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 	<title>MercList | Grocery list</title>
 	<style>
 		:root {
@@ -99,6 +102,9 @@
 			background: rgba(185, 232, 108, 0.08);
 			color: var(--text);
 		}
+
+		.install-button { display: none; }
+		.install-button.is-visible { display: inline-block; }
 
 		input[type="text"] {
 			width: 100%;
@@ -289,6 +295,7 @@
 		<nav class="view-switcher" aria-label="App sections">
 			<button class="view-button is-active" id="shopping-view" type="button">Shopping list</button>
 			<button class="view-button" id="available-view" type="button">Available items</button>
+			<button class="view-button install-button" id="install-app" type="button">Install app</button>
 		</nav>
 
 		<section id="shopping-screen" aria-label="Shopping list">
@@ -354,6 +361,8 @@
 		const availableList = document.getElementById("available-list");
 		const availableCount = document.getElementById("available-count");
 		const resetStarter = document.getElementById("reset-starter");
+		const installApp = document.getElementById("install-app");
+		let deferredInstallPrompt;
 
 		function loadItems() {
 			try {
@@ -540,6 +549,20 @@
 		shoppingView.addEventListener("click", () => showView("shopping"));
 		availableView.addEventListener("click", () => showView("available"));
 
+		window.addEventListener("beforeinstallprompt", event => {
+			event.preventDefault();
+			deferredInstallPrompt = event;
+			installApp.classList.add("is-visible");
+		});
+
+		installApp.addEventListener("click", async () => {
+			if (!deferredInstallPrompt) return;
+			deferredInstallPrompt.prompt();
+			await deferredInstallPrompt.userChoice;
+			deferredInstallPrompt = null;
+			installApp.classList.remove("is-visible");
+		});
+
 		clearBought.addEventListener("click", () => {
 			items.forEach(item => {
 				if (item.status === "bought") item.status = "idle";
@@ -550,6 +573,10 @@
 
 		render();
 		renderAvailableItems();
+
+		if ("serviceWorker" in navigator) {
+			navigator.serviceWorker.register("sw.js").catch(() => {});
+		}
 	</script>
 </body>
 </html>
