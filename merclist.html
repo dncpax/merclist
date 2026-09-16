@@ -332,6 +332,7 @@
 
 		let items = loadItems();
 		let availableItems = loadAvailableItems();
+		saveAvailableItems();
 		const list = document.getElementById("grocery-list");
 		const count = document.getElementById("count");
 		const clearBought = document.getElementById("clear-bought");
@@ -363,7 +364,10 @@
 		function loadAvailableItems() {
 			try {
 				const saved = JSON.parse(localStorage.getItem(availableStorageKey));
-				if (Array.isArray(saved)) return saved;
+				if (Array.isArray(saved)) {
+					return [...new Set([...saved, ...items.map(item => item.name)])]
+						.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+				}
 			} catch (error) {
 			}
 			return [...new Set([...starterItems, ...items.map(item => item.name)])].sort((a, b) => a.localeCompare(b));
@@ -432,8 +436,11 @@
 				}
 				row.querySelector(".remove").addEventListener("click", () => {
 					items = items.filter(candidate => candidate !== item);
+					availableItems = availableItems.filter(name => name !== item.name);
 					saveItems();
+					saveAvailableItems();
 					render();
+					renderAvailableItems();
 				});
 				list.appendChild(row);
 			});
@@ -465,7 +472,10 @@
 				if (!inShoppingList) addButton.addEventListener("click", () => addToShoppingList(name));
 				row.querySelector(".remove-available").addEventListener("click", () => {
 					availableItems = availableItems.filter(item => item !== name);
+					items = items.filter(item => item.name !== name);
 					saveAvailableItems();
+					saveItems();
+					render();
 					renderAvailableItems();
 				});
 				availableList.appendChild(row);
@@ -483,8 +493,13 @@
 			const name = availableInput.value.trim();
 			if (!name || availableItems.some(item => item.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) return;
 			availableItems.push(name);
+			if (!items.some(item => item.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) {
+				items.push({ name, status: "idle" });
+			}
 			availableInput.value = "";
 			saveAvailableItems();
+			saveItems();
+			render();
 			renderAvailableItems();
 			availableInput.focus();
 		});
