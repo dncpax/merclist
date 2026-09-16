@@ -329,11 +329,13 @@
 		const starterItems = [
 			"Água destilada", "Atum", "Bases copos", 
 			"Cerveja", "Cogumelos", "Creme Nívea", "Cotonetes",
-			"Fio dental", "Formas alumínio", "Pasta Dentes",
+			"Fio dental", "Formas alumínio",
 			"Fruta", "Leite sem lactose", "Lixívia", "Louro", "Mata moscas",
 			"Ovos", "Pão congelado", "Papel higiénico", "Pasta dentes",
 			"Pilhas", "Queijo", "Rolos cozinha", "Sabonetes",
-			"Sacos de lixo", "Salada", "Salsa", "Sopa", "Tampões ouvidos", "Champô", "Gel Duche", "Desodorizante", "Papel alumínio", "Papel vegetal", "Papel filme", "Esparguete", "Arroz", "Feijão", "Grão bico", "Azeite", "Vinagre", "Molho tomate", "Maionese", "Mostarda", "Ketchup"
+			"Sacos de lixo", "Salada", "Salsa", "Sopa", "Tampões ouvidos", "Champô", "Gel Duche", "Desodorizante", "Papel alumínio", "Papel vegetal", "Papel filme", "Esparguete", "Arroz", "Feijão", "Grão bico", "Azeite", "Vinagre", "Molho tomate", "Maionese", "Mostarda", "Ketchup",
+			"Carne", "Peixe", "Frango", "Bacalhau", "Fiambre", "Queijo fresco", "Iogurte", "Manteiga", "Natas", "Café", "Chá", "Sumo laranja", "Vinho", 
+            "Frutos secos", "Chocolate", "Bolachas", "Mel", "Cereais", "Farinha", "Fermento", "Sal", "Pimenta", "Especiarias"
 		];
 
 		let items = loadItems();
@@ -368,7 +370,9 @@
 							loadedItems.push({ name, status: "idle" });
 						}
 					});
-					return loadedItems;
+					return loadedItems.filter((item, index, allItems) =>
+						allItems.findIndex(candidate => candidate.name.localeCompare(item.name, undefined, { sensitivity: "base" }) === 0) === index
+					);
 				}
 			} catch (error) {
 			}
