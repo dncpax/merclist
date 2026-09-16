@@ -316,6 +316,7 @@
 						<strong id="available-title">Available items</strong>
 						<span class="count" id="available-count">0 items</span>
 					</div>
+					<button class="clear-button" id="reset-starter" type="button">Restore built-in</button>
 				</div>
 				<ul id="available-list"></ul>
 			</section>
@@ -337,6 +338,7 @@
 
 		let items = loadItems();
 		let availableItems = loadAvailableItems();
+		saveItems();
 		saveAvailableItems();
 		const list = document.getElementById("grocery-list");
 		const count = document.getElementById("count");
@@ -349,17 +351,24 @@
 		const availableInput = document.getElementById("available-item");
 		const availableList = document.getElementById("available-list");
 		const availableCount = document.getElementById("available-count");
+		const resetStarter = document.getElementById("reset-starter");
 
 		function loadItems() {
 			try {
 				const saved = JSON.parse(localStorage.getItem(storageKey));
 				if (Array.isArray(saved)) {
-					return saved.map(item => ({
+					const loadedItems = saved.map(item => ({
 						name: item.name,
 						status: ["idle", "needed", "bought"].includes(item.status)
 							? item.status
 							: item.checked ? "needed" : "idle"
 					}));
+					starterItems.forEach(name => {
+						if (!loadedItems.some(item => item.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) {
+							loadedItems.push({ name, status: "idle" });
+						}
+					});
+					return loadedItems;
 				}
 			} catch (error) {
 			}
@@ -370,12 +379,17 @@
 			try {
 				const saved = JSON.parse(localStorage.getItem(availableStorageKey));
 				if (Array.isArray(saved)) {
-					return [...new Set([...saved, ...items.map(item => item.name)])]
-						.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+					return mergeNames([...starterItems, ...saved, ...items.map(item => item.name)]);
 				}
 			} catch (error) {
 			}
-			return [...new Set([...starterItems, ...items.map(item => item.name)])].sort((a, b) => a.localeCompare(b));
+			return mergeNames([...starterItems, ...items.map(item => item.name)]);
+		}
+
+		function mergeNames(names) {
+			return names.filter((name, index, allNames) =>
+				allNames.findIndex(candidate => candidate.localeCompare(name, undefined, { sensitivity: "base" }) === 0) === index
+			).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 		}
 
 		function saveItems() {
@@ -498,6 +512,16 @@
 			render();
 			renderAvailableItems();
 			availableInput.focus();
+		});
+
+		resetStarter.addEventListener("click", () => {
+			if (!window.confirm("Replace your current lists with the built-in list?")) return;
+			items = starterItems.map(name => ({ name, status: "idle" }));
+			availableItems = [...starterItems];
+			saveItems();
+			saveAvailableItems();
+			render();
+			renderAvailableItems();
 		});
 
 		function showView(view) {
