@@ -1,17 +1,26 @@
-Simples lista de compras mercearia/super:
+# MercList
 
-1 - lista de compras
-    - ao checar um item, vai para topo - no topo ficamos com as compras a fazer
-    - quando pomos um item no carrinho só temos de clicar botão "comprado", para ele ficar riscado - sabemos o que já temos da lista no carrinho
-    - no fim, limpamos a lista de itens comprados clicando em "limpar comprados"
-2 - lista pré-definida de itens
-    - a app tem uma lista pré-definida de itens
-    - o user pode acrescentar ou apagar itens
-    - esta lista aparece no 1º ecrã como itens possíveis de comprar
-    - quando há uma nova versão, o user pode unir a lista nova list pré-definida da app com a sua, sem duplicados, se quiser
-3 - memória da lista
-    - a app guarda tudo na localstorage, logo podemos fechar a app, reiniciar o telemóvel, que a app mantém o seu estado
-4 - a app está no github e quando abre usa o url das Pages deste repo
-    - quem quiser pode fazer download da app, ou do html da 1a versão, se não quiser ficar ligado a este repo por questões de segurança
-    - mas para users "normies" não sei como ajudar... ou confiam e usam assim ou pedem a alguém que possa fazer isto ou um fork
-    
+Uma simples lista de compras para mercearia e supermercado.
+
+## Funcionalidades
+
+1. **Lista de compras**
+    - Ao marcar um item, este passa para o topo da lista. No topo ficam as compras a fazer.
+    - Quando colocamos um item no carrinho, basta clicar em **Comprado** para o riscar e identificar o que já está no carrinho.
+    - No fim, podemos limpar os itens comprados clicando em **Limpar comprados**.
+
+2. **Lista predefinida de itens**
+    - A app inclui uma lista predefinida de itens.
+    - O utilizador pode acrescentar ou apagar itens.
+    - Esta lista aparece no primeiro ecrã como itens possíveis de comprar.
+    - Quando existe uma nova versão da app, o utilizador pode juntar a nova lista predefinida à sua lista, sem duplicados, se quiser.
+
+3. **Memória da lista**
+    - A app guarda tudo em `localStorage`.
+    - É possível fechar a app ou reiniciar o telemóvel e o estado da lista mantém-se.
+
+4. **GitHub Pages**
+    - A app está no GitHub e é aberta através do URL do GitHub Pages deste repositório.
+    - Quem quiser pode descarregar a app ou o HTML de uma versão específica, sem ficar dependente deste repositório por questões de segurança.
+    - Utilizadores menos técnicos podem usar diretamente a versão publicada, pedir ajuda para instalar a app ou criar um fork.
+
