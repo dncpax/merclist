@@ -417,7 +417,6 @@
 					</label>
 					${isNeeded ? `<button class="status-action" type="button" aria-label="Mark ${escapeHtml(item.name)} as bought">Bought</button>` : ""}
 					${isBought ? `<button class="status-action" type="button" aria-label="Undo bought status for ${escapeHtml(item.name)}">Undo</button>` : ""}
-					<button class="remove" type="button" aria-label="Remove ${escapeHtml(item.name)}">&times;</button>
 				`;
 
 				row.querySelector("input").addEventListener("change", event => {
@@ -434,14 +433,6 @@
 						render();
 					});
 				}
-				row.querySelector(".remove").addEventListener("click", () => {
-					items = items.filter(candidate => candidate !== item);
-					availableItems = availableItems.filter(name => name !== item.name);
-					saveItems();
-					saveAvailableItems();
-					render();
-					renderAvailableItems();
-				});
 				list.appendChild(row);
 			});
 		}
