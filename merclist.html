@@ -77,6 +77,29 @@
 			margin-bottom: 18px;
 		}
 
+		.view-switcher {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 24px;
+		}
+
+		.view-button {
+			min-height: 38px;
+			border: 1px solid var(--border);
+			background: transparent;
+			color: var(--muted);
+			font-size: 0.82rem;
+			padding: 0 13px;
+		}
+
+		.view-button.is-active,
+		.view-button:hover,
+		.view-button:focus-visible {
+			border-color: var(--accent);
+			background: rgba(185, 232, 108, 0.08);
+			color: var(--text);
+		}
+
 		input[type="text"] {
 			width: 100%;
 			min-width: 0;
@@ -233,6 +256,23 @@
 			text-align: center;
 		}
 
+		.available-item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			min-height: 58px;
+			border-bottom: 1px solid var(--border);
+			padding: 7px 17px;
+		}
+
+		.available-item:last-child { border-bottom: 0; }
+		.available-name { flex: 1; }
+		.available-actions { display: flex; align-items: center; gap: 4px; }
+		.available-action { min-width: auto; min-height: 36px; padding: 0 10px; font-size: 0.76rem; }
+		.available-action.secondary { border: 1px solid var(--border); background: transparent; color: var(--muted); }
+		.available-action.secondary:hover, .available-action.secondary:focus-visible { border-color: var(--accent); color: var(--text); }
+
 		@media (max-width: 420px) {
 			main { width: min(100% - 24px, 620px); }
 			.add-form { gap: 7px; }
@@ -246,12 +286,12 @@
 		<h1>Grocery list</h1>
 		<p class="subtitle">Tap an item when it finds its way into your basket.</p>
 
-		<form class="add-form" id="add-form">
-			<label class="sr-only" for="new-item">Add a grocery item</label>
-			<input id="new-item" type="text" maxlength="60" placeholder="Add an item..." autocomplete="off">
-			<button type="submit" aria-label="Add grocery item">Add</button>
-		</form>
+		<nav class="view-switcher" aria-label="App sections">
+			<button class="view-button is-active" id="shopping-view" type="button">Shopping list</button>
+			<button class="view-button" id="available-view" type="button">Available items</button>
+		</nav>
 
+		<section id="shopping-screen" aria-label="Shopping list">
 		<section class="list-shell" aria-labelledby="list-title">
 			<div class="list-header">
 				<div class="list-heading">
@@ -262,21 +302,47 @@
 			</div>
 			<ul id="grocery-list"></ul>
 		</section>
+		</section>
+
+		<section id="available-screen" aria-labelledby="available-title" hidden>
+			<form class="add-form" id="available-form">
+				<label class="sr-only" for="available-item">Add an available item</label>
+				<input id="available-item" type="text" maxlength="60" placeholder="Add an available item..." autocomplete="off">
+				<button type="submit" aria-label="Add available item">Add</button>
+			</form>
+			<section class="list-shell">
+				<div class="list-header">
+					<div class="list-heading">
+						<strong id="available-title">Available items</strong>
+						<span class="count" id="available-count">0 items</span>
+					</div>
+				</div>
+				<ul id="available-list"></ul>
+			</section>
+		</section>
 	</main>
 
 	<script>
 		const storageKey = "merclist-items";
+		const availableStorageKey = "merclist-available-items";
 		const starterItems = [
 			"Apples", "Bananas", "Bread", "Carrots", "Chicken", "Coffee",
 			"Eggs", "Milk", "Onions", "Pasta", "Rice", "Tomatoes"
 		];
 
 		let items = loadItems();
+		let availableItems = loadAvailableItems();
 		const list = document.getElementById("grocery-list");
 		const count = document.getElementById("count");
-		const form = document.getElementById("add-form");
-		const newItem = document.getElementById("new-item");
 		const clearBought = document.getElementById("clear-bought");
+		const shoppingView = document.getElementById("shopping-view");
+		const availableView = document.getElementById("available-view");
+		const shoppingScreen = document.getElementById("shopping-screen");
+		const availableScreen = document.getElementById("available-screen");
+		const availableForm = document.getElementById("available-form");
+		const availableInput = document.getElementById("available-item");
+		const availableList = document.getElementById("available-list");
+		const availableCount = document.getElementById("available-count");
 
 		function loadItems() {
 			try {
@@ -294,8 +360,28 @@
 			return starterItems.map(name => ({ name, status: "idle" }));
 		}
 
+		function loadAvailableItems() {
+			try {
+				const saved = JSON.parse(localStorage.getItem(availableStorageKey));
+				if (Array.isArray(saved)) return saved;
+			} catch (error) {
+			}
+			return [...new Set([...starterItems, ...items.map(item => item.name)])].sort((a, b) => a.localeCompare(b));
+		}
+
 		function saveItems() {
 			localStorage.setItem(storageKey, JSON.stringify(items));
+		}
+
+		function saveAvailableItems() {
+			localStorage.setItem(availableStorageKey, JSON.stringify(availableItems));
+		}
+
+		function addToShoppingList(name) {
+			if (items.some(item => item.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) return;
+			items.push({ name, status: "needed" });
+			saveItems();
+			render();
 		}
 
 		function render() {
@@ -353,22 +439,67 @@
 			});
 		}
 
+		function renderAvailableItems() {
+			const orderedItems = [...availableItems].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+			availableList.innerHTML = "";
+			availableCount.textContent = `${orderedItems.length} ${orderedItems.length === 1 ? "item" : "items"}`;
+
+			if (!orderedItems.length) {
+				availableList.innerHTML = '<li class="empty">No available items yet.</li>';
+				return;
+			}
+
+			orderedItems.forEach(name => {
+				const row = document.createElement("li");
+				row.className = "available-item";
+				const inShoppingList = items.some(item => item.name.localeCompare(name, undefined, { sensitivity: "base" }) === 0);
+				const addLabel = inShoppingList ? "Already in shopping list" : `Add ${name} to shopping list`;
+				row.innerHTML = `
+					<span class="available-name">${escapeHtml(name)}</span>
+					<span class="available-actions">
+						<button class="available-action${inShoppingList ? " secondary" : ""}" type="button" aria-label="${escapeHtml(addLabel)}" ${inShoppingList ? "disabled" : ""}>${inShoppingList ? "Added" : "Add"}</button>
+						<button class="available-action secondary remove-available" type="button" aria-label="Remove ${escapeHtml(name)} from available items">&times;</button>
+					</span>
+				`;
+				const addButton = row.querySelector(".available-action:not(.remove-available)");
+				if (!inShoppingList) addButton.addEventListener("click", () => addToShoppingList(name));
+				row.querySelector(".remove-available").addEventListener("click", () => {
+					availableItems = availableItems.filter(item => item !== name);
+					saveAvailableItems();
+					renderAvailableItems();
+				});
+				availableList.appendChild(row);
+			});
+		}
+
 		function escapeHtml(value) {
 			return value.replace(/[&<>'"]/g, character => ({
 				"&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;"
 			}[character]));
 		}
 
-		form.addEventListener("submit", event => {
+		availableForm.addEventListener("submit", event => {
 			event.preventDefault();
-			const name = newItem.value.trim();
-			if (!name) return;
-			items.push({ name, status: "idle" });
-			newItem.value = "";
-			saveItems();
-			render();
-			newItem.focus();
+			const name = availableInput.value.trim();
+			if (!name || availableItems.some(item => item.localeCompare(name, undefined, { sensitivity: "base" }) === 0)) return;
+			availableItems.push(name);
+			availableInput.value = "";
+			saveAvailableItems();
+			renderAvailableItems();
+			availableInput.focus();
 		});
+
+		function showView(view) {
+			const showingAvailable = view === "available";
+			shoppingScreen.hidden = showingAvailable;
+			availableScreen.hidden = !showingAvailable;
+			shoppingView.classList.toggle("is-active", !showingAvailable);
+			availableView.classList.toggle("is-active", showingAvailable);
+			if (showingAvailable) renderAvailableItems();
+		}
+
+		shoppingView.addEventListener("click", () => showView("shopping"));
+		availableView.addEventListener("click", () => showView("available"));
 
 		clearBought.addEventListener("click", () => {
 			items.forEach(item => {
@@ -379,6 +510,7 @@
 		});
 
 		render();
+		renderAvailableItems();
 	</script>
 </body>
 </html>
